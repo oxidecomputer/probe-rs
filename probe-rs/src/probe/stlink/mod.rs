@@ -9,7 +9,6 @@ use super::{
 };
 use crate::Memory;
 use constants::{commands, JTagFrequencyToDivider, Mode, Status, SwdFrequencyToDelayCount};
-use num_traits::FromPrimitive;
 use scroll::{Pread, BE, LE};
 use std::time::Duration;
 use thiserror::Error;
