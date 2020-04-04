@@ -9,6 +9,7 @@ use super::{
 };
 use crate::Memory;
 use constants::{commands, JTagFrequencyToDivider, Mode, Status, SwdFrequencyToDelayCount};
+use num_traits::FromPrimitive;
 use scroll::{Pread, BE, LE};
 use std::time::Duration;
 use thiserror::Error;
@@ -139,7 +140,7 @@ impl DebugProbe for STLink<STLinkUSBDevice> {
             Err(StlinkError::CommandFailed(Status::JtagGetIdcodeError))
             | Err(StlinkError::CommandFailed(Status::JtagNoDeviceConnected)) => {
                 self.target_reset_assert()?;
-                
+
                 let mut buf = [0; 2];
                 self.device.write(
                     vec![commands::JTAG_COMMAND, commands::JTAG_ENTER2, param, 0],
