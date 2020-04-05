@@ -99,8 +99,6 @@ pub enum DebugProbeError {
     NotImplemented(&'static str),
     #[error("Error in previous batched command: {0}")]
     BatchError(BatchCommand),
-    #[error("Some functionality was not implemented yet")]
-    AttachFailed(&'static str),
 }
 
 /// The Probe struct is a generic wrapper over the different
