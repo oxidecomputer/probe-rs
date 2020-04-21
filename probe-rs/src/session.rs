@@ -6,7 +6,7 @@ use crate::config::{
     ChipInfo, MemoryRegion, RawFlashAlgorithm, RegistryError, Target, TargetSelector,
 };
 use crate::core::Architecture;
-use crate::{Core, CoreList, Error, Memory, MemoryList, Probe};
+use crate::{probe::AttachMethod, Core, CoreList, Error, Memory, MemoryList, Probe};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -27,7 +27,11 @@ enum ArchitectureSession {
 
 impl Session {
     /// Open a new session with a given debug target
-    pub fn new(probe: Probe, target: impl Into<TargetSelector>) -> Result<Self, Error> {
+    pub fn new(
+        probe: Probe,
+        target: impl Into<TargetSelector>,
+        attach_method: AttachMethod,
+    ) -> Result<Self, Error> {
         // TODO: Handle different architectures
 
         let mut generic_probe = Some(probe);
@@ -77,8 +81,9 @@ impl Session {
 
         let session = match target.architecture() {
             Architecture::ARM => {
-                let arm_interface = ArmCommunicationInterface::new(generic_probe.unwrap())
-                    .map_err(|(_probe, err)| err)?;
+                let arm_interface =
+                    ArmCommunicationInterface::new(generic_probe.unwrap(), attach_method)
+                        .map_err(|(_probe, err)| err)?;
                 ArchitectureSession::Arm(arm_interface)
             }
             Architecture::RISCV => {
@@ -151,7 +156,7 @@ fn try_arm_autodetect(probe: Probe) -> (Probe, Result<Option<ChipInfo>, Error>) 
     if probe.has_dap_interface() {
         log::debug!("Autodetect: Trying DAP interface...");
 
-        let arm_interface = ArmCommunicationInterface::new(probe);
+        let arm_interface = ArmCommunicationInterface::new(probe, AttachMethod::Normal);
 
         match arm_interface {
             Ok(mut arm_interface) => {

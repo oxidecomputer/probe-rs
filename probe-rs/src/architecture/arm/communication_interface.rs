@@ -12,7 +12,8 @@ use super::{
 };
 use crate::config::ChipInfo;
 use crate::{
-    CommunicationInterface, DebugProbe, DebugProbeError, Error as ProbeRsError, Memory, Probe,
+    probe::AttachMethod, CommunicationInterface, DebugProbe, DebugProbeError,
+    Error as ProbeRsError, Memory, Probe,
 };
 use jep106::JEP106Code;
 use std::cell::RefCell;
@@ -123,10 +124,49 @@ pub struct ArmCommunicationInterface {
 }
 
 impl ArmCommunicationInterface {
-    pub fn new(probe: Probe) -> Result<Self, (Probe, DebugProbeError)> {
-        Ok(Self {
+    pub fn new(
+        probe: Probe,
+        attach_method: AttachMethod,
+    ) -> Result<Self, (Probe, DebugProbeError)> {
+        let interface = Self {
             inner: Rc::new(RefCell::new(InnerArmCommunicationInterface::new(probe)?)),
-        })
+        };
+
+        if attach_method == AttachMethod::UnderReset {
+            // we need to halt the chip here
+
+            {
+                use crate::architecture::arm::core::m4::{Demcr, Dhcsr};
+                use crate::core::CoreRegister;
+
+                let mut memory =
+                    ADIMemoryInterface::<ArmCommunicationInterface>::new(interface.clone(), 0)
+                        .unwrap();
+
+                /*
+                let mut dhcsr = Dhcsr(0);
+                dhcsr.set_c_halt(true);
+                dhcsr.set_c_debugen(true);
+                dhcsr.enable_write();
+
+                memory.write32(Dhcsr::ADDRESS, dhcsr.into()).unwrap();
+                */
+
+                let mut demcr = Demcr(0);
+                demcr.set_vc_corereset(true);
+
+                memory.write32(Demcr::ADDRESS, demcr.into()).unwrap();
+            }
+
+            interface
+                .inner
+                .borrow_mut()
+                .probe
+                .target_reset_deassert()
+                .unwrap();
+        }
+
+        Ok(interface)
     }
 
     pub fn dedicated_memory_interface(&self) -> Result<Option<Memory>, DebugProbeError> {

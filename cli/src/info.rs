@@ -9,7 +9,7 @@ use probe_rs::{
         memory::{ADIMemoryInterface, CSComponent},
         ArmCommunicationInterface,
     },
-    Memory,
+    AttachMethod, Memory,
 };
 
 pub(crate) fn show_info_of_device(shared_options: &SharedOptions) -> Result<(), CliError> {
@@ -38,7 +38,8 @@ pub(crate) fn show_info_of_device(shared_options: &SharedOptions) -> Result<(), 
 
     */
 
-    let mut interface = ArmCommunicationInterface::new(probe).map_err(|(_probe, error)| error)?;
+    let mut interface = ArmCommunicationInterface::new(probe, AttachMethod::Normal)
+        .map_err(|(_probe, error)| error)?;
 
     println!("\nAvailable Access Ports:");
 
