@@ -143,14 +143,12 @@ impl ArmCommunicationInterface {
                     ADIMemoryInterface::<ArmCommunicationInterface>::new(interface.clone(), 0)
                         .unwrap();
 
-                /*
                 let mut dhcsr = Dhcsr(0);
                 dhcsr.set_c_halt(true);
                 dhcsr.set_c_debugen(true);
                 dhcsr.enable_write();
 
                 memory.write32(Dhcsr::ADDRESS, dhcsr.into()).unwrap();
-                */
 
                 let mut demcr = Demcr(0);
                 demcr.set_vc_corereset(true);
