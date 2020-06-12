@@ -121,9 +121,9 @@ pub(crate) fn send_command<Req: Request, Res: Response>(
     device: &mut std::sync::Mutex<DAPLinkDevice>,
     request: Req,
 ) -> Result<Res> {
-    // On CMSIS-DAP v2 USB HS devices, a single request might be up to 512 bytes,
+    // On CMSIS-DAP v2 USB HS devices, a single request might be up to 1024 bytes,
     // plus we need one extra byte for the always-written HID report ID.
-    const BUFFER_LEN: usize = 513;
+    const BUFFER_LEN: usize = 1025;
 
     // Write the command & request to the buffer.
     let mut write_buffer = [0; BUFFER_LEN];
