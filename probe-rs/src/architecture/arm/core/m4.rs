@@ -439,11 +439,16 @@ impl CoreInterface for M4 {
                     return Ok(self.current_state);
                 }
 
-                log::warn!(
-                    "Reason for halt has changed, old reason was {:?}, new reason is {:?}",
-                    &self.current_state,
-                    &reason
-                );
+                if let CoreStatus::Halted(current) = self.current_state {
+                    if current != reason {
+                        log::warn!(
+                            "Reason for halt has changed, \
+                            old reason was {:?}, new reason is {:?}",
+                            &self.current_state,
+                            &reason
+                        );
+                    }
+                }
             }
 
             self.current_state = CoreStatus::Halted(reason);
