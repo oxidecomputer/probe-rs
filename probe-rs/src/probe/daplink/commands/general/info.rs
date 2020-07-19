@@ -4,7 +4,7 @@ use anyhow::anyhow;
 use scroll::{Pread, LE};
 
 #[allow(unused)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Command {
     VendorID = 0x01,
     ProductID = 0x02,
@@ -65,7 +65,7 @@ impl Response for FirmwareVersion {
 }
 
 #[derive(Debug)]
-pub struct TargetDeviceVendor(String);
+pub struct TargetDeviceVendor(pub String);
 
 impl Response for TargetDeviceVendor {
     fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self> {
@@ -74,7 +74,7 @@ impl Response for TargetDeviceVendor {
 }
 
 #[derive(Debug)]
-pub struct TargetDeviceName(String);
+pub struct TargetDeviceName(pub String);
 
 impl Response for TargetDeviceName {
     fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self> {
@@ -82,30 +82,30 @@ impl Response for TargetDeviceName {
     }
 }
 
-#[allow(dead_code)]
+#[derive(Copy, Clone, Debug)]
 pub struct Capabilities {
-    swd_implemented: bool,
-    jtag_implemented: bool,
-    swo_uart_implemented: bool,
-    swo_manchester_implemented: bool,
-    atomic_commands_implemented: bool,
-    test_domain_timer_implemented: bool,
-    swo_streaming_trace_implemented: bool,
+    pub swd_implemented: bool,
+    pub jtag_implemented: bool,
+    pub swo_uart_implemented: bool,
+    pub swo_manchester_implemented: bool,
+    pub atomic_commands_implemented: bool,
+    pub test_domain_timer_implemented: bool,
+    pub swo_streaming_trace_implemented: bool,
 }
 
 impl Response for Capabilities {
     fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self> {
         // This response can contain two info bytes.
         // In the docs only the first byte is described, so for now we always will only parse that specific byte.
-        if buffer[offset + 1] > 0 {
+        if buffer[offset] > 0 {
             Ok(Capabilities {
-                swd_implemented: buffer[offset + 2] & 0x01 > 0,
-                jtag_implemented: buffer[offset + 2] & 0x02 > 0,
-                swo_uart_implemented: buffer[offset + 2] & 0x04 > 0,
-                swo_manchester_implemented: buffer[offset + 2] & 0x08 > 0,
-                atomic_commands_implemented: buffer[offset + 2] & 0x10 > 0,
-                test_domain_timer_implemented: buffer[offset + 2] & 0x20 > 0,
-                swo_streaming_trace_implemented: buffer[offset + 2] & 0x40 > 0,
+                swd_implemented: buffer[offset + 1] & 0x01 > 0,
+                jtag_implemented: buffer[offset + 1] & 0x02 > 0,
+                swo_uart_implemented: buffer[offset + 1] & 0x04 > 0,
+                swo_manchester_implemented: buffer[offset + 1] & 0x08 > 0,
+                atomic_commands_implemented: buffer[offset + 1] & 0x10 > 0,
+                test_domain_timer_implemented: buffer[offset + 1] & 0x20 > 0,
+                swo_streaming_trace_implemented: buffer[offset + 1] & 0x40 > 0,
             })
         } else {
             Err(anyhow!(CmsisDapError::UnexpectedAnswer))
@@ -117,9 +117,9 @@ pub struct TestDomainTime(u32);
 
 impl Response for TestDomainTime {
     fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self> {
-        if buffer[offset + 1] == 0x08 {
+        if buffer[offset] == 0x08 {
             let res = buffer
-                .pread_with::<u32>(offset + 2, LE)
+                .pread_with::<u32>(offset + 1, LE)
                 .expect("This is a bug. Please report it.");
             Ok(TestDomainTime(res))
         } else {
@@ -128,13 +128,14 @@ impl Response for TestDomainTime {
     }
 }
 
-pub struct SWOTraceBufferSize(u32);
+#[derive(Debug)]
+pub struct SWOTraceBufferSize(pub u32);
 
 impl Response for SWOTraceBufferSize {
     fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self> {
-        if buffer[offset + 1] == 0x04 {
+        if buffer[offset] == 0x04 {
             let res = buffer
-                .pread_with::<u32>(offset + 2, LE)
+                .pread_with::<u32>(offset + 1, LE)
                 .expect("This is a bug. Please report it.");
             Ok(SWOTraceBufferSize(res))
         } else {

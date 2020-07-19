@@ -6,6 +6,7 @@ pub mod transfer;
 use crate::architecture::arm::DapError;
 use crate::DebugProbeError;
 use core::ops::Deref;
+use std::fmt::Debug;
 use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
@@ -19,6 +20,8 @@ pub enum CmsisDapError {
     ErrorResponse,
     #[error("Too much data provided for SWJ Sequence command")]
     TooMuchData,
+    #[error("Short read in SWO response")]
+    ShortRead,
     #[error("Error in the USB HID access")]
     HidApi(#[from] hidapi::HidError),
     #[error("Error in the USB access")]
@@ -118,13 +121,15 @@ pub(crate) trait Response: Sized {
     fn from_bytes(buffer: &[u8], offset: usize) -> Result<Self>;
 }
 
-pub(crate) fn send_command<Req: Request, Res: Response>(
+// On CMSIS-DAP v2 USB HS devices, a single request might be up to 1024 bytes,
+// plus we need one extra byte for the always-written HID report ID.
+pub const BUFFER_LEN: usize = 1025;
+
+pub(crate) fn send_command<Req: Request + Debug, Res: Response + Debug>(
     device: &mut std::sync::Mutex<DAPLinkDevice>,
     request: Req,
 ) -> Result<Res> {
-    // On CMSIS-DAP v2 USB HS devices, a single request might be up to 1024 bytes,
-    // plus we need one extra byte for the always-written HID report ID.
-    const BUFFER_LEN: usize = 1025;
+    log::trace!("sending {:?}", request);
 
     // Write the command & request to the buffer.
     let mut write_buffer = [0; BUFFER_LEN];
@@ -153,11 +158,13 @@ pub(crate) fn send_command<Req: Request, Res: Response>(
         // Read back resonse.
         let mut read_buffer = [0; BUFFER_LEN];
         device.read(&mut read_buffer)?;
-        log::trace!("Receive buffer: {:02X?}", &read_buffer[..]);
 
         if read_buffer[0] == *Req::CATEGORY {
-            Res::from_bytes(&read_buffer, 1)
+            let rval = Res::from_bytes(&read_buffer, 1);
+            log::trace!("received: {:x?}", rval);
+            rval
         } else {
+            log::trace!("Receive buffer: {:02X?}", &read_buffer[..]);
             Err(anyhow!(CmsisDapError::UnexpectedAnswer))
                 .with_context(|| format!("Received invalid data for {:?}", *Req::CATEGORY))
         }

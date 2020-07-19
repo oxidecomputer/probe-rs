@@ -6,13 +6,19 @@ use crate::architecture::arm::{
     DAPAccess, DapError, PortType, SwvAccess,
 };
 use crate::probe::{daplink::commands::CmsisDapError, BatchCommand};
-use crate::{DebugProbe, DebugProbeError, DebugProbeSelector, Memory, WireProtocol};
+use crate::{
+    DebugProbe, DebugProbeError, DebugProbeSelector, Error as ProbeRsError, Memory, WireProtocol,
+};
 use commands::{
     general::{
         connect::{ConnectRequest, ConnectResponse},
         disconnect::{DisconnectRequest, DisconnectResponse},
-        info::{Command, PacketCount, PacketSize},
+        info::{Capabilities, Command, PacketCount, PacketSize, SWOTraceBufferSize},
         reset::{ResetRequest, ResetResponse},
+        swo::{
+            BaudRate, Control, ControlResponse, DataRequest, DataResponse, Mode, ModeResponse,
+            StatusRequest, StatusResponse, Transport, TransportResponse,
+        },
     },
     swd,
     swj::{
@@ -42,6 +48,7 @@ pub struct DAPLink {
 
     packet_size: Option<u16>,
     packet_count: Option<u8>,
+    capabilities: Option<Capabilities>,
 
     /// Speed in kHz
     speed_khz: u32,
@@ -84,6 +91,7 @@ impl DAPLink {
             protocol: None,
             packet_count: None,
             packet_size: None,
+            capabilities: None,
             speed_khz: 1_000,
             batch: Vec::new(),
         }
@@ -215,6 +223,35 @@ impl DAPLink {
             _ => Ok(0),
         }
     }
+
+    fn read_swv_data(&mut self) -> Result<Vec<u8>, DebugProbeError> {
+        let cap = self.capabilities;
+
+        if cap.is_none() || !cap.unwrap().swo_uart_implemented {
+            return Err(DebugProbeError::Other(anyhow!(
+                "SWV not implemented on this device"
+            )));
+        }
+
+        let response = commands::send_command::<StatusRequest, StatusResponse>(
+            &mut self.device,
+            StatusRequest {},
+        )?;
+
+        if response.count == 0 {
+            return Ok(Vec::new());
+        }
+
+        let response = commands::send_command::<DataRequest, DataResponse>(
+            &mut self.device,
+            DataRequest(std::cmp::min(
+                response.count,
+                commands::BUFFER_LEN as u32 - 4,
+            )),
+        )?;
+
+        Ok(response.data)
+    }
 }
 
 impl DPAccess for DAPLink {
@@ -281,6 +318,11 @@ impl DebugProbe for DAPLink {
         self.packet_count = Some(packet_count);
         self.packet_size = Some(packet_size);
 
+        self.capabilities = Some(commands::send_command::<Command, Capabilities>(
+            &mut self.device,
+            Command::Capabilities,
+        )?);
+
         debug!("Attaching to target system (clock = {}kHz)", self.speed_khz);
 
         let protocol = if let Some(protocol) = self.protocol {
@@ -322,6 +364,59 @@ impl DebugProbe for DAPLink {
         self.send_swj_sequences(SequenceRequest::new(&[0x00])?)?;
 
         debug!("Successfully changed to SWD.");
+
+        if !self.capabilities.unwrap().swo_uart_implemented {
+            return Ok(());
+        }
+
+        //
+        // Get our buffer size, and set our transport mode and baud rate.  (To
+        // avoid errors on subsequent commands, we first send the command to
+        // stop tracing.)
+        //
+        let response =
+            commands::send_command::<Control, ControlResponse>(&mut self.device, Control::Stop)?;
+
+        let SWOTraceBufferSize(size) = commands::send_command::<Command, SWOTraceBufferSize>(
+            &mut self.device,
+            Command::SWOTraceBufferSize,
+        )?;
+
+        let response = commands::send_command::<Transport, TransportResponse>(
+            &mut self.device,
+            Transport::TransportDataViaSWO,
+        )?;
+
+        match response {
+            TransportResponse(Status::DAPOk) => {}
+            TransportResponse(Status::DAPError) => {
+                return Err(CmsisDapError::UnexpectedAnswer.into());
+            }
+        }
+
+        let response = commands::send_command::<Mode, ModeResponse>(&mut self.device, Mode::UART)?;
+
+        match response {
+            ModeResponse(Status::DAPOk) => {}
+            ModeResponse(Status::DAPError) => {
+                return Err(CmsisDapError::UnexpectedAnswer.into());
+            }
+        }
+
+        let BaudRate(baud) =
+            commands::send_command::<BaudRate, BaudRate>(&mut self.device, BaudRate(2_000_000))?;
+
+        debug!("SWO: size={}, baud={}", size, baud);
+
+        let response =
+            commands::send_command::<Control, ControlResponse>(&mut self.device, Control::Start)?;
+
+        match response {
+            ControlResponse(Status::DAPOk) => {}
+            ControlResponse(Status::DAPError) => {
+                return Err(CmsisDapError::UnexpectedAnswer.into());
+            }
+        }
 
         Ok(())
     }
@@ -381,11 +476,11 @@ impl DebugProbe for DAPLink {
     }
 
     fn get_interface_itm(&self) -> Option<&dyn SwvAccess> {
-        None
+        Some(self as _)
     }
 
     fn get_interface_itm_mut(&mut self) -> Option<&mut dyn SwvAccess> {
-        None
+        Some(self as _)
     }
 }
 
@@ -495,5 +590,12 @@ impl Drop for DAPLink {
         // We ignore the error case as we can't do much about it anyways.
         let _ = self.process_batch();
         let _ = self.detach();
+    }
+}
+
+impl SwvAccess for DAPLink {
+    fn read_swv(&mut self) -> Result<Vec<u8>, ProbeRsError> {
+        let data = self.read_swv_data()?;
+        Ok(data)
     }
 }
