@@ -20,6 +20,7 @@ where
     interface: AP,
     access_port: MemoryAP,
     only_32bit_data_size: bool,
+    spiden: Option<bool>,
 }
 
 impl<'probe> ADIMemoryInterface<ArmCommunicationInterface<'probe>> {
@@ -28,10 +29,12 @@ impl<'probe> ADIMemoryInterface<ArmCommunicationInterface<'probe>> {
         interface: ArmCommunicationInterface<'probe>,
         access_port_number: impl Into<MemoryAP>,
     ) -> Result<ADIMemoryInterface<ArmCommunicationInterface>, AccessPortError> {
+        log::trace!("new memory interface");
         let mut interface = Self {
             interface,
             access_port: access_port_number.into(),
             only_32bit_data_size: true,
+            spiden: None,
         };
 
         interface.detect_data_size()?;
@@ -50,6 +53,7 @@ impl ADIMemoryInterface<MockMemoryAP> {
             interface: mock,
             access_port: access_port_number.into(),
             only_32bit_data_size: false,
+            spiden: None,
         }
     }
 
@@ -69,10 +73,7 @@ where
     /// Build the correct CSW register for a memory access
     ///
     /// Currently, only AMBA AHB Access is supported.
-    fn build_csw_register(
-        &mut self,
-        data_size: DataSize
-    ) -> Result<CSW, AccessPortError> {
+    fn build_csw_register(&mut self, data_size: DataSize) -> Result<CSW, AccessPortError> {
         // The CSW Register is set for an AMBA AHB Acccess, according to
         // the ARM Debug Interface Architecture Specification.
         //
@@ -88,10 +89,13 @@ where
         //   HPROT[2] == 0   - non-cacheable  access
         //   HPROT[3] == 0   - non-bufferable access
 
-        let csw = self.read_ap_register(CSW::default())?;
+        if self.spiden.is_none() {
+            let spiden = self.read_ap_register(CSW::default())?.SPIDEN != 0;
+            self.spiden = Some(spiden);
+        }
 
         Ok(CSW {
-            PROT: if csw.SPIDEN != 0 { 0b010 } else { 0b110 },
+            PROT: if self.spiden.unwrap() { 0b010 } else { 0b110 },
             CACHE: 0b11,
             AddrInc: AddressIncrement::Single,
             SIZE: data_size,
