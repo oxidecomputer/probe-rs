@@ -511,6 +511,13 @@ where
 
         Ok(())
     }
+
+    pub fn flush(&mut self) -> Result<(), AccessPortError> {
+        match self.interface.flush() {
+            Ok(_) => Ok(()),
+            Err(e) => Err(AccessPortError::FlushError(e)),
+        }
+    }
 }
 
 /// Calculates a 32-bit word aligned range from an address/length pair.
@@ -568,6 +575,10 @@ where
 
     fn write_8(&mut self, address: u32, data: &[u8]) -> Result<(), Error> {
         ADIMemoryInterface::write_8(self, address, data).map_err(Error::architecture_specific)
+    }
+
+    fn flush(&mut self) -> Result<(), Error> {
+        ADIMemoryInterface::flush(self).map_err(Error::architecture_specific)
     }
 }
 
