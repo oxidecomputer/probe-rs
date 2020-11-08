@@ -66,12 +66,16 @@ where
     /// Build the correct CSW register for a memory access
     ///
     /// Currently, only AMBA AHB Access is supported.
-    pub fn build_csw_register(data_size: DataSize) -> CSW {
+    pub fn build_csw_register(
+        &mut self,
+        data_size: DataSize
+    ) -> Result<CSW, AccessPortError> {
         // The CSW Register is set for an AMBA AHB Acccess, according to
         // the ARM Debug Interface Architecture Specification.
         //
         // The PROT bits are set as follows:
-        //  BIT[30]              = 1  - Should be One, otherwise unpredictable
+        //  BIT[30]              = 1  - If SPIDEN is clear, must be set
+        //                       = 0  - If SPIDEN is set, must be clear
         //  MasterType, bit [29] = 1  - Access as default AHB Master
         //  HPROT[4]             = 0  - Non-allocating access
         //
@@ -81,13 +85,15 @@ where
         //   HPROT[2] == 0   - non-cacheable  access
         //   HPROT[3] == 0   - non-bufferable access
 
-        CSW {
-            PROT: 0b110,
+        let csw = self.read_ap_register(CSW::default())?;
+
+        Ok(CSW {
+            PROT: if csw.SPIDEN != 0 { 0b010 } else { 0b110 },
             CACHE: 0b11,
             AddrInc: AddressIncrement::Single,
             SIZE: data_size,
             ..Default::default()
-        }
+        })
     }
 
     /// Read a 32 bit register on the given AP.
@@ -153,7 +159,7 @@ where
             return Err(AccessPortError::alignment_error(address, 4));
         }
 
-        let csw = Self::build_csw_register(DataSize::U32);
+        let csw = self.build_csw_register(DataSize::U32)?;
 
         let tar = TAR { address };
         self.write_ap_register(csw)?;
@@ -174,7 +180,7 @@ where
             // Read 32-bit word and extract the correct byte
             ((self.read_word_32(aligned.start)? >> bit_offset) & 0xFF) as u8
         } else {
-            let csw = Self::build_csw_register(DataSize::U8);
+            let csw = self.build_csw_register(DataSize::U8)?;
             let tar = TAR { address };
             self.write_ap_register(csw)?;
             self.write_ap_register(tar)?;
@@ -203,7 +209,7 @@ where
         }
 
         // Second we read in 32 bit reads until we have less than 32 bits left to read.
-        let csw = Self::build_csw_register(DataSize::U32);
+        let csw = self.build_csw_register(DataSize::U32)?;
         self.write_ap_register(csw)?;
 
         let mut address = start_address;
@@ -306,7 +312,7 @@ where
             return Err(AccessPortError::alignment_error(address, 4));
         }
 
-        let csw = Self::build_csw_register(DataSize::U32);
+        let csw = self.build_csw_register(DataSize::U32)?;
         let drw = DRW { data };
         let tar = TAR { address };
         self.write_ap_register(csw)?;
@@ -334,7 +340,7 @@ where
 
             self.write_word_32(aligned.start, word)?;
         } else {
-            let csw = Self::build_csw_register(DataSize::U8);
+            let csw = self.build_csw_register(DataSize::U8)?;
             let drw = DRW {
                 data: u32::from(data) << bit_offset,
             };
@@ -368,7 +374,7 @@ where
         );
 
         // Second we write in 32 bit reads until we have less than 32 bits left to write.
-        let csw = Self::build_csw_register(DataSize::U32);
+        let csw = self.build_csw_register(DataSize::U32)?;
 
         self.write_ap_register(csw)?;
 

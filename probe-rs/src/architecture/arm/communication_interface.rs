@@ -702,10 +702,11 @@ fn ap_supports_only_32bit_access(
     interface: &mut ArmCommunicationInterface,
     ap: MemoryAP,
 ) -> Result<bool, DebugProbeError> {
-    let csw = ADIMemoryInterface::<ArmCommunicationInterface>::build_csw_register(DataSize::U8);
+    let mut csw = interface.read_ap_register(ap, CSW::default())?;
+    csw.SIZE = DataSize::U8;
     interface.write_ap_register(ap, csw)?;
-    let csw = interface.read_ap_register(ap, CSW::default())?;
 
+    let csw = interface.read_ap_register(ap, CSW::default())?;
     Ok(csw.SIZE != DataSize::U8)
 }
 
