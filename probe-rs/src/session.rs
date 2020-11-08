@@ -236,6 +236,12 @@ impl Session {
         let mut interface = self.get_arm_interface()?;
         interface.enable_swo(config)?;
 
+        // A TPIU clock of zero in the SwoConfig denotes that tracing has been
+        // (or will be) enabled separately
+        if config.tpiu_clk() == 0 {
+            return Ok(());
+        }
+
         // Enable tracing on the target
         {
             let mut core = self.core(0)?;
