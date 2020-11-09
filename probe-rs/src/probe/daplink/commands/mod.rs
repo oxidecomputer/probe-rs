@@ -91,6 +91,37 @@ impl DAPLinkDevice {
         }
     }
 
+    /// Drain and discard any outstanding data
+    pub(super) fn drain(&self) {
+        let mut discard = [0u8; 128];
+
+        match self {
+            DAPLinkDevice::V1(device) => {
+                loop {
+                    match device.read_timeout(&mut discard, 1) {
+                        Ok(n) if n != 0 => continue,
+                        _ => break,
+                    }
+                }
+            }
+
+            DAPLinkDevice::V2 {
+                handle,
+                out_ep: _,
+                in_ep,
+                swo_ep: _,
+            } => {
+                let timeout = Duration::from_millis(1);
+                loop {
+                    match handle.read_bulk(*in_ep, &mut discard, timeout) {
+                        Ok(n) if n != 0 => continue,
+                        _ => break,
+                    }
+                }
+            }
+        }
+    }
+
     /// Check if SWO streaming is supported by this device.
     pub(super) fn swo_streaming_supported(&self) -> bool {
         match self {
