@@ -310,10 +310,11 @@ impl DAPLink {
         match self.swo_buffer_size {
             Some(swo_buffer_size) => {
                 // We'll request the smaller of the probe's SWO buffer and
-                // its maximum packet size. If the probe has less data to
-                // send it will respond with as much as it can.
+                // its maximum packet size (minus the size of the SWO read
+                // response). If the probe has less data to send it will
+                // respond with as much as it can.
                 let n = if let Some(packet_size) = self.packet_size {
-                    usize::min(swo_buffer_size, packet_size as usize) as u16
+                    usize::min(swo_buffer_size, (packet_size - 4) as usize) as u16
                 } else {
                     usize::min(swo_buffer_size, u16::MAX as usize) as u16
                 };
