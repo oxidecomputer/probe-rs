@@ -217,10 +217,26 @@ pub(crate) fn send_command<Req: Request, Res: Response>(
         device.write(&write_buffer[..size])?;
         log::trace!("Send buffer: {:02X?}", &write_buffer[..size]);
 
+        // We need to be sure to read no more than wMaxPacketSize, as devices
+        // are within their rights to behave strangely on an outsized read:
+        // they can view a read of exactly wMaxPacketSize as neither a short
+        // read (it fills a packet) nor a completed one (it is less than the
+        // requested size), ultimately resulting in the correct data, but only
+        // after the host times out and cancels the outstanding read.  For HID
+        // devices, we don't have an easy way of determining the maximum packet
+        // size, so we just stick with the buffer size -- but for V2 devices,
+        // we can use the correct value from the device descriptor.
+        let len: usize = match device {
+            DAPLinkDevice::V1(_) => BUFFER_LEN,
+            DAPLinkDevice::V2 { handle, .. } => {
+                handle.device().device_descriptor()?.max_packet_size().into()
+            }
+        };
+
         // Read back resonse.
-        let mut read_buffer = [0; BUFFER_LEN];
+        let mut read_buffer = vec![0u8; len];
         device.read(&mut read_buffer)?;
-        log::trace!("Receive buffer: {:02X?}", &read_buffer[..]);
+        log::trace!("Receive buffer: {:02X?}", &read_buffer);
 
         if read_buffer[0] == *Req::CATEGORY {
             Res::from_bytes(&read_buffer, 1)
