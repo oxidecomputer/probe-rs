@@ -192,7 +192,14 @@ pub fn open_device_from_selector(
             };
 
             let timeout = Duration::from_millis(100);
-            let sn_str = handle.read_languages(timeout)?.get(0).and_then(|lang| {
+            let langs = match handle.read_languages(timeout) {
+                Ok(langs) => langs,
+                Err(e) => {
+                    log::debug!("could not read languages: {:?}", e);
+                    continue;
+                }
+            };
+            let sn_str = langs.get(0).and_then(|lang| {
                 handle
                     .read_serial_number_string(*lang, &d_desc, timeout)
                     .ok()
