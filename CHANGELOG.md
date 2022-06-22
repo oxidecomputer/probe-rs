@@ -5,6 +5,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added an option to disable use of double-buffering when downloading flash (#1030, #883)
+- rtt::ChannelMode implements additional traits: Clone, Copy, serde's Serialize and Deserialize
+- Added a permissions system that allows the user to specify if a full chip erase is allowed (#918)
+- Added debug sequence for the nRF5340 that turns on the network core can unlock both cores by erasing them if that is permitted (#918)
+- Support for core registers `msp`, `psp` and `extra`, extra containing:
+  - Bits[31:24] CONTROL.
+  - Bits[23:16] FAULTMASK.
+  - Bits[15:8] BASEPRI.
+  - Bits[7:0] PRIMASK.
+- Debug port start sequence for LPC55S16. (#944)
+- Added a command to print the list of all supported chips. (#946)
+- Added a command to print info about a chip, such as RAM and the number of cores. (#946)
+- ARM:`Session::swo_reader` that returns a wrapping implementation of `std::io::Read` around `Session::read_swo`. (#916)
+- Added CortexM23 to Armv8m mapping for `target-gen`. (#966)
+- Added get_target_voltage to the Probe struct to access the inner DebugProbe method. (#991)
+- Debugger: Added support for showing multiple inlined functions in backtrace. (#1002)
+- Debugger: Add support LocLists (attribute value of DW_AT_location) (#1025)
+- Debugger: Add support for DAP Requests (ReadMemory, WriteMemory, Evaluate & SetVariable) (#1035)
+- Debugger: Add support for DAP Requests (Disassemble & SetInstructionBreakpoints) (#1049)
+- Debugger: Add support for stepping at 'statement' level, plus 'step in', 'step out' (#1056)
+- Debugger: Add support for navigating and monitoring SVD Peripheral Registers. (#1072)
+- Added GD32F3x0 series support (#1079)
+- Added support for connecting to ARM devices via JTAG to the JLink probe
+- Added preliminary support for ARM v7-A cores
+- Added preliminary support for ARM v8-A cores
+- CLI Debugger: Added 8-bit read / write memory commands
+- Added Arm Serial-Wire-View (SWV) support for more targets (e.g. STM32H7 families) (#1117)
+  - Support added for trace funnels and SWO peripherals
+  - Added custom sequencing for STM32H7 parts to configure debug system components on attach
+- Added support for ARMv8-A cores running in 64-bit mode (#1120)
+- Added FPU register reading support for cortex-m cores
+
+### Changed
+
+- ARM reset sequence now retries failed reads of DHCSR, fixes >500kHz SWD for ATSAMD21.
+- Chip names are now matched treating an 'x' as a wildcard. (#964)
+- GDB server is now available as a subcommand in the probe-rs-cli, not as a separate binary in the `gdb-server` package anymore . (#972)
+- `probe_rs::debug` and `probe-rs-debugger` changes/cleanup to the internals (#1013)
+  - Removed StackFrameIterator and incorporated its logic into DebugInfo::unwind()
+  - StackFrame now has VariableCache entries for locals, statics and registers
+  - Modify DebugSession and CoreData to handle multiple cores.
+  - Modify Variable::parent_key to be Option<i64> and use None rather than 0 values to control logic.
+  - Use the updated StackFrame, and new VariableNodeType to facilitate 'lazy' loading of variables during stack trace operations. VSCode and MS DAP will request one 'level' of variables at a time, and there is no need to resolve and cache variable data unless the user is going to view/use it.
+  - Improved `Variable` value formatting for complex variable types.
+- Updated STM32H7 series yaml to support newly released chips. (#1011)
+- Debugger: Removed the CLI mode, in favour of `probe-rs-cli` which has richer functionality. (#1041)
+- Renamed `Probe::speed` to `Probe::speed_khz`.
+- Debugger: Changes to DAP Client `launch.json` to prepare for WIP multi-core support. (#1072)
+- `ram_download` example now uses clap syntax.
+- Refactored `probe-rs/src/debug/mod.rs` into several smaller files. (#1082)
+- Update STM32L4 series yaml from Keil.STM32L4xx_DFP.2.5.0. (#1086)
+- Debugger: SVD uses new `expand` feature of `svd-parser` crate to expand arrays and clusters. (#1090)
+- Updated cmsis-pack dependency to version 0.6.0. (#1089)
+- Updated all parameters and fields that refer to memory addresses from u32 to u64 in preparation for 64-bit target support. (#1115)
+- Updated `Core::read_core_reg` and `Core::write_core_reg` to work with both 32 and 64-bit values (#1119)
+- Renamed `core::CoreRegisterAddress` to `core::RegisterId`, and `core::CoreRegister` to `core::MemoryMappedRegister`. (#1121)
+- Updated gdb-server to use gdbstub internally (#1125)
+- gdb-server now uses all cores on a target (#1125)
+- gdb-server now supports floating point registers (#1133)
+
+### Fixed
+
+- Fixed a panic when cmsisdap probes return more transfers than requested (#922, #923)
+- `probe-rs-debugger` Various fixes in PR. (#895)
+  - Fix stack overflow when unwinding circular references in data structures. (#894)
+  - Reworked the stack unwind in `StackFrameIterator::new()` and `StackFrameIterator::next()`
+    - More reliable backtrace and register values for previous frames in the stack.
+    - Lazy (on demand) load of &lt;statics&gt; variables to avoid overhead during debugging.
+    - More accurate breakpoint handling from VSCode extension.
+    - Virtual frames for `inlined` functions, that can step back to the call site.
+  - A fix to adapt to Rust 2021 encoding of Dwarf `DW_AT_discr_value` tags for variants.
+  - Updated MS DAP Protocol to 1.51.1.
+  - Adapt to `defmt` 0.3 'Rzcobs' encoding to fix [VSCode #26](https://github.com/probe-rs/vscode/issues/26).
+  - Support the new `defmt` 0.3 `DEFMT_LOG` environment variable.
+  - Requires `probe-rs/vscode` [PR #27](https://github.com/probe-rs/vscode/pull/27)
+  - Debugger: Improved RTT reliability between debug adapter and VSCode (#1035)
+  - Fixed missing `derive` feature for examples using `clap`.
+  - Increase SWD wait timeout (#994)
+  - Debugger: Fix `Source` breakpoints only worked for a single source file. (#1098)
+  - Debugger: Fix assumptions for ARM cores
+  - GDB: Fix assumptions for ARM cores
+- Fixed access to Arm CoreSight components being completed through the wrong AP (#1114)
+- Debug: Additions to complete RISC-V and 64-bit support. (#1129)
+  - probe_rs::debug::Registers uses new `core::RegisterId` and `core::RegisterValue` for consistent register handling.
+  - RISCV `Disassembly` works correctly for 'compressed' (RV32C isa variants) instruction sets.
+  - RISCV stack unwind improvements (stack frames and registers work, variables do not resolve correctly.)
+- Fixed a possible endless recursion in the J-Link code, when no chip is connected. (#1123)
+- Fixed an issue with ARMv7-a/v8-a where some register values might be corrupted. (#1131)
+- Fixed an issue where `probe-rs-cli`'s debug console didn't detect if the core is halted (#1131)
+- Fixed detecting CMSIS-DAP probes that only say "CMSIS-DAP" in interface strings, not the product string (#1142/#1135/#995)
+
 ## [0.12.0]
 
 - Added support for `chip-erase` flag under the `probe-rs-cli download` command. (#898)
