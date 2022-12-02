@@ -86,7 +86,11 @@ impl ArmDebugSequence for LPC55S69 {
 
             interface.write_dp_register(dp, abort)?;
 
-            enable_debug_mailbox(interface, dp)?;
+            // Per 51.6.2 and 51.6.3 there is no need to issue a debug mailbox
+            // command if we're attaching to a valid target. In fact, running
+            // the debug mailbox _prevents_ this from attaching to a running
+            // target since the debug mailbox is a separate code path.
+            // enable_debug_mailbox(interface, dp)?;
         }
 
         Ok(())
