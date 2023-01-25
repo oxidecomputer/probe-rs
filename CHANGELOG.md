@@ -7,6 +7,180 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Avoid nested calls to tracing macros, otherwise filtering doesn't work properly. (#1415)
+- cmsisdap: change read timeout from 100ms to 1000ms
+
+## [0.14.2]
+
+Released 2023-01-18
+
+- Added STM32С0 target (STM32С011 and STM32С031). (#1403)
+
+### Fixed
+
+- stlink: fix retries on DP/AP WAIT errors. (#1406)
+
+## [0.14.1]
+
+Released 2023-01-14
+
+## [0.14.0]
+
+Released 2023-01-13
+
+### Added
+
+- Added PartialEq Trait to the struct DebugProbeInfo. (#1173)
+- Added support for configuring trace data destinations (#1177)
+  - Tracing on M4 architectures utilize the TPIU for all hardware tracing (#1182)
+- ITM tracing can now be completed using the probe-rs CLI (#1180)
+- Added support for MIMXRT10xx targets (#1174)
+- Added support for the Cortex M7 of MIMXRT11xx targets (#1250)
+- Added support for in-line (column specific) breakpoints where multiple statements (potential breakpoints) are on the same line of source code. (#1156)
+- Added support for MSP432P4XX targets (#1201)
+- Added support for Microchip SAMDA1
+- Added Probe re-attach handling when needed after `debug_device_unlock`
+- Added Custom ArmDebugSequence for ATSAM D5x/E5x devices
+- Added a `FlashLoader::data` method (#1254)
+- Added Support for STM32H735 family. (#913)
+- Added support for MAX32660 target (#1249)
+- Added support for W7500 target
+- Added an optional `stack_size` configuration to flash algorithms to control the stack size (#1260)
+- Added Support for Debug Erase Sequences that (if available) are used instead of the normal chip-erase logic
+- Added Support for GD32E50x targets (#1304)
+- Added support for the Infineon XMC4000 family
+- Added support for the Infineon XMC4000 family (#1301)
+- Added debug support for viewing function arguments (#1333)
+- Added support for the EFM32GG11B family (#1346)
+- Added support for finding targets externally (#1338)
+
+### Changed
+
+- SWV vendor configuration has been refactored into sequences and trace functions have been renamed:
+  - `Session::setup_swv` has been renamed to `Session::setup_tracing`
+  - `Session::read_swo` has been renamed to `Session::read_trace_data`
+- `probe-rs-debugger`: RISC-V `ebreak` instruction will enter Debug Mode (#1213)
+- RTT: When a channel format is `defmt`, automatically set the channel mode to `BlockingIfFull` on attach. (Enhancement request #1161)
+- RTT: Report data decode errors when channel format is `defmt`. (#1243)
+  - Note: This is a breaking API change for `probe_rs_cli::rtt::RttActiveChannel::get_rtt_data()`. To mitigate the impact of this change:
+    - `probe_rs_cli::rtt::RttActiveTarget::poll_rtt()` will maintain the original signature and behaviour of ignoring errors from `defmt` until deprecated in 0.14.0.
+    - The new `probe_rs_cli::rtt::RttActiveTarget::poll_rtt_fallible()` will propagate errors from `get_rtt_data()` on any of the active channels.
+- target-gen: Various changes and optimizations: (#1259)
+  - Memory addresses and sizes in YAML are generated in hex format, for improved readability.
+  - Remove `Option::is_none`, empty `Vec`, and `false` bool values, in generated YAML, for improved readability.
+  - Generate all pack file specified memory regions.
+  - Match memory regions to pack file specified core names.
+- `probe_rs_target::chip::Chip` has a new field `pack_file_release` which is populated by `target-gen`.(#1259)
+- Benchmarking code moved from an example to `probe-rs-cli` subcommand (#1296).
+- Replace `log` crate, with `tracing` in `probe-rs-debugger` executable, and in the `rtt` library. (#1297)
+- Improved formatting of `probe-rs-cli info` output. (#1305)
+- Refactor VSCode handling of logging and user messaging - see [VSCode PR #37](https://github.com/probe-rs/vscode/pull/37) (#1334)
+- Refactor error handling, split `crate::Error::ArchitectureSpecific` into two separate variants for RISC-V and ARM, and create a new `ArmError` enum for ARM specific errors. (#1344)
+
+### Fixed
+
+- (#1351) Warning messages about duplicate packages when using `probe-rs` as a library
+- (#1269) Error message in case of FTDI device access issues.
+- (#350) Flashing and debugging on STM32 chips using WFI instructions should now be stable (fixed in #1177)
+- Fixed rtthost --scan-region to properly support memory range scannig. (#1192)
+- Debug: Improve logic for halt locations used by breakpoints and stepping. (#1156)
+- Debug: Some in-scope variables are excluded from stack_trace. (#1156)
+- Debug: Ensure RTT buffer on target is reported to DAP client in 'timely' manner. (#1208)
+- Debug: Provide unique default names on DAP client, when multiple RTT Channels have no configured name. (#1208)
+- Added missing memory regions for ESP32.yaml file, to fix RTT Channel name issue. (#1209)
+- Fix maximum addressable Flash size in ESP32.yaml file, to be 16Mb (was 64Mb). (#1209)
+- Debug: Enable stepping or running past a BKPT (Arm Cortex-M) or EBREAK (RISC-V) instruction (#1211).
+- (#1058) Non-successful DAP Transfer requests no longer require response data to be present.
+- Debug: Gracefully handle stack unwind when CFA rule references a FP with value of zero. (#1226)
+- Debugger: Improve core status checking during launch.(#1228)
+- Debugger: Prevent stack overflows when expanding "static" section in probe-rs-debugger. (#1231)
+- RTT: Prevent panicking in `probe-rs-cli-util/src/rtt/rs` when defmt stream decoding provides invalid frame index. (#1236)
+- Fix: Attaching to LPC55S69 seems to stop code execution - incorrect values in target YAML. (#1220)
+- Debug: Fix `probe-rs-debugger` crashes when variable unwind fails with excessively long error messages. (#1252)
+- Fix: Dual core devices had incorrect 'core' names in `STM32H7_Series.yaml`, causing panic during flashing. (#1023)
+- Fix: Include all RAM regions in `STM32H7_Series.yaml` (#429)
+- Fix: Include all new STM32H7 variants from the latest CMSIS pack file (#913)
+- Fix: Update STM32G0_Series.yaml to include latest variants (STM32G050, STM32G051, STM32G061, STM32G0B0, STM32G0B1, STM32G0C1) (#1266)
+- Fix: Correct flash algorithm values in LPC55S69.yaml. (#1220)
+- Fix: Timeout during flashing when using connect under reset - regression from #1259. (#1286)
+- Fix: Validate RiscV CSR addresses to avoid unnecessary panics. (#1291)
+- Debugger: Fix unpredictable behaviour when breaking on, or stepping over macros. (#1230)
+- Fix: Extend fix for WFI instructions (#1177) to STM32F1
+- Debugger: RTT data from target is now polled/reported in a timely manner, during stepping, and after breakpoint halting. (#1341)
+
+## [0.13.0]
+
+### Added
+
+- Added an option to disable use of double-buffering when downloading flash (#1030, #883)
+- rtt::ChannelMode implements additional traits: Clone, Copy, serde's Serialize and Deserialize
+- Added a permissions system that allows the user to specify if a full chip erase is allowed (#918)
+- Added debug sequence for the nRF5340 that turns on the network core can unlock both cores by erasing them if that is permitted (#918)
+- Support for core registers `msp`, `psp` and `extra`, extra containing:
+  - Bits[31:24] CONTROL.
+  - Bits[23:16] FAULTMASK.
+  - Bits[15:8] BASEPRI.
+  - Bits[7:0] PRIMASK.
+- Debug port start sequence for LPC55S16. (#944)
+- Added a command to print the list of all supported chips. (#946)
+- Added a command to print info about a chip, such as RAM and the number of cores. (#946)
+- ARM:`Session::swo_reader` that returns a wrapping implementation of `std::io::Read` around `Session::read_swo`. (#916)
+- Added CortexM23 to Armv8m mapping for `target-gen`. (#966)
+- Added get_target_voltage to the Probe struct to access the inner DebugProbe method. (#991)
+- Debugger: Added support for showing multiple inlined functions in backtrace. (#1002)
+- Debugger: Add support LocLists (attribute value of DW_AT_location) (#1025)
+- Debugger: Add support for DAP Requests (ReadMemory, WriteMemory, Evaluate & SetVariable) (#1035)
+- Debugger: Add support for DAP Requests (Disassemble & SetInstructionBreakpoints) (#1049)
+- Debugger: Add support for stepping at 'statement' level, plus 'step in', 'step out' (#1056)
+- Debugger: Add support for navigating and monitoring SVD Peripheral Registers. (#1072)
+- Added GD32F3x0 series support (#1079)
+- Added support for connecting to ARM devices via JTAG to the JLink probe
+- Added preliminary support for ARM v7-A cores
+- Added preliminary support for ARM v8-A cores
+- CLI Debugger: Added 8-bit read / write memory commands
+- Added Arm Serial-Wire-View (SWV) support for more targets (e.g. STM32H7 families) (#1117)
+  - Support added for trace funnels and SWO peripherals
+  - Added custom sequencing for STM32H7 parts to configure debug system components on attach
+- Added support for ARMv8-A cores running in 64-bit mode (#1120)
+- Added FPU register reading support for cortex-m cores
+- Added support for Huada Semiconductor HC32F005 MCUs.
+- Added FPU register support for Cortex-A cores (#1154)
+- GDB now reports the core name in `info threads` (#1158)
+- Added a recover sequence for the nRF9160 (#1169)
+
+### Changed
+
+- ARM reset sequence now retries failed reads of DHCSR, fixes >500kHz SWD for ATSAMD21.
+- Chip names are now matched treating an 'x' as a wildcard. (#964)
+- GDB server is now available as a subcommand in the probe-rs-cli, not as a separate binary in the `gdb-server` package anymore. (#972)
+- `probe_rs::debug` and `probe-rs-debugger` changes/cleanup to the internals (#1013)
+  - Removed StackFrameIterator and incorporated its logic into DebugInfo::unwind()
+  - StackFrame now has VariableCache entries for locals, statics and registers
+  - Modify DebugSession and CoreData to handle multiple cores.
+  - Modify Variable::parent_key to be Option<i64> and use None rather than 0 values to control logic.
+  - Use the updated StackFrame, and new VariableNodeType to facilitate 'lazy' loading of variables during stack trace operations. VSCode and MS DAP will request one 'level' of variables at a time, and there is no need to resolve and cache variable data unless the user is going to view/use it.
+  - Improved `Variable` value formatting for complex variable types.
+- Updated STM32H7 series yaml to support newly released chips. (#1011)
+- Debugger: Removed the CLI mode, in favour of `probe-rs-cli` which has richer functionality. (#1041)
+- Renamed `Probe::speed` to `Probe::speed_khz`.
+- Debugger: Changes to DAP Client `launch.json` to prepare for WIP multi-core support. (#1072)
+- `ram_download` example now uses clap syntax.
+- Refactored `probe-rs/src/debug/mod.rs` into several smaller files. (#1082)
+- Update STM32L4 series yaml from Keil.STM32L4xx_DFP.2.5.0. (#1086)
+- Debugger: SVD uses new `expand` feature of `svd-parser` crate to expand arrays and clusters. (#1090)
+- Updated cmsis-pack dependency to version 0.6.0. (#1089)
+- Updated all parameters and fields that refer to memory addresses from u32 to u64 in preparation for 64-bit target support. (#1115)
+- Updated `Core::read_core_reg` and `Core::write_core_reg` to work with both 32 and 64-bit values (#1119)
+- Renamed `core::CoreRegisterAddress` to `core::RegisterId`, and `core::CoreRegister` to `core::MemoryMappedRegister`. (#1121)
+- Updated gdb-server to use gdbstub internally (#1125)
+- gdb-server now uses all cores on a target (#1125)
+- gdb-server now supports floating point registers (#1133)
+- Debug: Correctly handle compressed vs non-compressed instructions sets for RISC-V. (#1224)
+- The core now needs to be halted for core register access. (#1044)
+- The memory functions to do memory transfers have been standardized. This effectively means that `read_*` and `write_*` do what the name says unconditionally. E.g. `read_8` will always do 8 bit reads or `write_32` will always do 32 bit writes. New functions that are called `read` and `write` have been introduced. Those will try to maximize throughput. They mix transfer sizes however they see fit. If you need to use a feature of a chip that requires a specific transfer size, please resort to the `read_*` and `write_*` functions. (#1078)
+
+### Fixed
+
 - Fixed a panic when cmsisdap probes return more transfers than requested (#922, #923)
 
 ## [0.12.0]
