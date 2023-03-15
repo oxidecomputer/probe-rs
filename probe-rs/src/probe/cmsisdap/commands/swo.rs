@@ -135,6 +135,7 @@ impl Request for StatusRequest {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug)]
 pub struct TraceStatus {
     pub(crate) active: bool,
@@ -152,6 +153,7 @@ impl From<u8> for TraceStatus {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct StatusResponse {
     pub(crate) status: TraceStatus,
@@ -208,6 +210,7 @@ impl Request for ExtendedStatusRequest {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct ExtendedStatusResponse {
     pub(crate) status: TraceStatus,

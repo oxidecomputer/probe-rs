@@ -124,6 +124,8 @@ fn variable_recurse(
 
     ret
 }
+
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Registers {
     register_description: &'static RegisterFile,

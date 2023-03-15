@@ -361,6 +361,7 @@ impl InnerTransferBlockRequest {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct TransferBlockResponse {
     transfer_count: u16,

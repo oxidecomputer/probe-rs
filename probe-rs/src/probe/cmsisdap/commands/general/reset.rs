@@ -37,6 +37,7 @@ impl Execute {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct ResetResponse {
     pub status: Status,

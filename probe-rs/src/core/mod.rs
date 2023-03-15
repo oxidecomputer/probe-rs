@@ -37,6 +37,7 @@ pub struct CoreInformation {
     pub pc: u32,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct RegisterDescription {
     pub(crate) name: &'static str,
@@ -529,6 +530,7 @@ impl BreakpointId {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct Breakpoint {
     address: u32,

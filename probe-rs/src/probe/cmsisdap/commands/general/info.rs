@@ -124,6 +124,7 @@ impl ParseFromResponse for u32 {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Capabilities {
     pub(crate) swd_implemented: bool,

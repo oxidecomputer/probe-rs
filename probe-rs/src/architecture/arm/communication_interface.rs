@@ -118,6 +118,7 @@ impl ArmDebugState for Uninitialized {}
 
 impl ArmDebugState for Initialized {}
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub(crate) struct DpState {
     pub debug_port_version: DebugPortVersion,

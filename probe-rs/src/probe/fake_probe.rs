@@ -190,6 +190,7 @@ impl RawDapAccess for FakeProbe {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 struct FakeArmInterface<S: ArmDebugState> {
     probe: Box<FakeProbe>,
