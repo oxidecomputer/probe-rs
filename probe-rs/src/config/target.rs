@@ -90,10 +90,10 @@ impl Target {
         };
 
         if chip.name.starts_with("LPC55S69") || chip.name.starts_with("LPC55S28") {
-            log::warn!("Using custom sequence for LPC55S69");
+            log::info!("Using custom sequence for LPC55S69");
             debug_sequence = DebugSequence::Arm(LPC55S69::create());
         } else if chip.name.starts_with("esp32c3") {
-            log::warn!("Using custom sequence for ESP32c3");
+            log::info!("Using custom sequence for ESP32c3");
             debug_sequence = DebugSequence::Riscv(ESP32C3::create());
         }
 
