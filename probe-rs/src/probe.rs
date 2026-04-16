@@ -2,6 +2,7 @@
 pub(crate) mod common;
 pub(crate) mod usb_util;
 
+#[cfg(feature = "serialport")]
 pub mod blackmagic;
 pub mod ch347usbjtag;
 pub mod cmsisdap;
@@ -11,6 +12,7 @@ pub mod ftdi;
 pub mod glasgow;
 pub mod jlink;
 pub mod list;
+#[cfg(feature = "serialport")]
 pub mod sifliuart;
 pub mod stlink;
 pub mod wlink;
