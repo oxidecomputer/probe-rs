@@ -21,7 +21,7 @@ exclude = ["tests/"]
 
 [features]
 default = ["builtin-targets", "cmsisdap_v1"]
-
+serialport = ["dep:serialport"]
 
 # Enable all built in targets.
 builtin-targets = ["dep:bincode", "dep:serde_yaml", "dep:probe-rs-target"]
@@ -40,9 +40,7 @@ probe-rs-target.workspace = true
 bincode = { version = "2", features = ["serde"], optional = true }
 bitfield = "0.19.0"
 bitvec = "1"
-hidapi = { version = "2.6.4", default-features = false, features = [
-    "linux-native-basic-udev",
-], optional = true }
+hidapi = { git = "https://github.com/oxidecomputer/hidapi-rs", branch = "oxide-stable", optional = true }
 ihex = "3.0"
 itertools = "0.14"
 jep106 = "0.3"
@@ -52,12 +50,10 @@ object = { version = "0.38", default-features = false, features = [
     "read_core",
     "std",
 ] }
-nusb = "0.2.1"
+nusb = { git = "https://github.com/oxidecomputer/nusb.git", branch = "add_illumos" }
 futures-lite = { version = "2", default-features = false }
 scroll = "0.13"
-serialport = { version = "4.7.0", default-features = false, features = [
-    "usbportinfo-interface",
-] }
+serialport = { git = "https://github.com/jgallagher/serialport-rs", branch = "illumos-support", optional = true }
 tracing = "0.1"
 uf2-decode = "0.2"
 espflash = { version = "4", default-features = false }
