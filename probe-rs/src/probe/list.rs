@@ -4,10 +4,7 @@ use crate::probe::{
     DebugProbeError, DebugProbeInfo, DebugProbeSelector, Probe, ProbeCreationError, ProbeFactory,
 };
 
-use super::{
-    ch347usbjtag, cmsisdap, espusbjtag, ftdi, glasgow, jlink, stlink, wlink,
-};
-
+use super::{ch347usbjtag, cmsisdap, espusbjtag, ftdi, glasgow, jlink, stlink, wlink};
 
 #[cfg(feature = "serialport")]
 use super::blackmagic;

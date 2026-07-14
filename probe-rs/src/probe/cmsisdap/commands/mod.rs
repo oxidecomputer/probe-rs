@@ -215,11 +215,22 @@ impl CmsisDapDevice {
         match self {
             #[cfg(feature = "cmsisdap_v1")]
             CmsisDapDevice::V1 { handle, .. } => {
-                match handle.read_timeout(buf, self.usb_timeout().as_millis() as i32)? {
-                    // Timeout is not indicated by error, but by returning 0 read bytes
-                    0 => Err(SendError::Timeout),
-                    n => Ok(n),
+                // The retries are a workaround for unexpected behavior on illumos
+                // This is probably an edge case in either old buggy MCULink firmware
+                // or illumos usb behavior. See humility#705
+                for retry in 0..10 {
+                    match handle.read_timeout(buf, self.usb_timeout().as_millis() as i32)? {
+                        // Timeout is not indicated by error, but by returning 0 read bytes
+                        0 => {}
+                        n => {
+                            if n != 0 {
+                                tracing::debug!("took {retry} retries");
+                            }
+                            return Ok(n);
+                        }
+                    }
                 }
+                return Err(SendError::Timeout);
             }
             CmsisDapDevice::V2 { handle, in_ep, .. } => {
                 Ok(handle.read_bulk(*in_ep, buf, self.usb_timeout())?)
