@@ -1724,12 +1724,14 @@ checksum = "befe65164a090041cdf6e0d21a0ec3198d856fbfe2b76e324a073e790bb49f8c"
 
 [[package]]
 name = "hidapi"
-version = "1.4.1"
-source = "git+https://github.com/oxidecomputer/hidapi-rs?branch=oxide-stable#69f84deac74461bfc08adefd1feb8abe4fcdda26"
+version = "2.6.4"
+source = "git+https://github.com/oxidecomputer/hidapi-rs?branch=oxide-v2.6.4#a52788fd9f7b33e3f303f309ba1c330db1b4dded"
 dependencies = [
  "cc",
+ "cfg-if",
  "libc",
  "pkg-config",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

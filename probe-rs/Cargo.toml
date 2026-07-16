@@ -40,7 +40,7 @@ probe-rs-target.workspace = true
 bincode = { version = "2", features = ["serde"], optional = true }
 bitfield = "0.19.0"
 bitvec = "1"
-hidapi = { git = "https://github.com/oxidecomputer/hidapi-rs", branch = "oxide-stable", optional = true }
+hidapi = { git = "https://github.com/oxidecomputer/hidapi-rs", branch = "oxide-v2.6.4", optional = true, features = ["linux-static-hidraw", "illumos-static-libusb"] }
 ihex = "3.0"
 itertools = "0.14"
 jep106 = "0.3"
