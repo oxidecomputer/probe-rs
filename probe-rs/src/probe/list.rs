@@ -6,10 +6,8 @@ use crate::probe::{
 
 use super::{ch347usbjtag, cmsisdap, espusbjtag, ftdi, glasgow, jlink, stlink, wlink};
 
-#[cfg(feature = "serialport")]
 use super::blackmagic;
 
-#[cfg(feature = "serialport")]
 use super::sifliuart;
 
 /// Struct to list all attached debug probes
@@ -123,7 +121,6 @@ impl Default for AllProbesLister {
 
 impl AllProbesLister {
     const DRIVERS: &'static [&'static dyn ProbeFactory] = &[
-        #[cfg(feature = "serialport")]
         &blackmagic::BlackMagicProbeFactory,
         &cmsisdap::CmsisDapFactory,
         &ftdi::FtdiProbeFactory,
@@ -131,7 +128,6 @@ impl AllProbesLister {
         &jlink::JLinkFactory,
         &espusbjtag::EspUsbJtagFactory,
         &wlink::WchLinkFactory,
-        #[cfg(feature = "serialport")]
         &sifliuart::SifliUartFactory,
         &glasgow::GlasgowFactory,
         &ch347usbjtag::Ch347UsbJtagFactory,
