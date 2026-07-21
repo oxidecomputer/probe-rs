@@ -21,7 +21,6 @@ exclude = ["tests/"]
 
 [features]
 default = ["builtin-targets", "cmsisdap_v1"]
-serialport = ["dep:serialport"]
 
 # Enable all built in targets.
 builtin-targets = ["dep:bincode", "dep:serde_yaml", "dep:probe-rs-target"]
@@ -53,7 +52,9 @@ object = { version = "0.38", default-features = false, features = [
 nusb = { git = "https://github.com/oxidecomputer/nusb.git", branch = "add_illumos" }
 futures-lite = { version = "2", default-features = false }
 scroll = "0.13"
-serialport = { git = "https://github.com/jgallagher/serialport-rs", branch = "illumos-support", optional = true }
+serialport = { git = "https://github.com/oxidecomputer/serialport-rs", branch = "illumos-support-4.7.1", default-features = false, features = [
+    "usbportinfo-interface",
+]}
 tracing = "0.1"
 uf2-decode = "0.2"
 espflash = { version = "4", default-features = false }
