@@ -2602,7 +2602,6 @@ dependencies = [
 [[package]]
 name = "nusb"
 version = "0.2.3"
-source = "git+https://github.com/oxidecomputer/nusb.git?branch=add_illumos#899ccceef9a50946e87a4af4d5615e18abfc41d9"
 dependencies = [
  "core-foundation",
  "core-foundation-sys",
@@ -2615,7 +2614,7 @@ dependencies = [
  "once_cell",
  "rustix",
  "slab",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
